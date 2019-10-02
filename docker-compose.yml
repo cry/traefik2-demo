@@ -1,0 +1,67 @@
+version: "3.7"
+services:
+  traefik:
+    image: traefik
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik:/etc/traefik
+    environment:
+      - TZ=Australia/Sydney
+      - DO_AUTH_TOKEN=${DO_AUTH_TOKEN}
+    networks:
+      - traefik
+      - traefik_external
+    labels:
+      - traefik.enable=true
+      - traefik.backend=traefik-api
+      - traefik.docker.network=traefik2_demo_traefik
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      # SSL configuration
+      - traefik.http.routers.traefik-ssl.entryPoints=https
+      - traefik.http.routers.traefik-ssl.rule=host(`traefik.${TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.traefik-ssl.middlewares=sso@file
+      - traefik.http.routers.traefik-ssl.tls=true
+      - traefik.http.routers.traefik-ssl.tls.certResolver=le
+  traefik-fa:
+    image: thomseddon/traefik-forward-auth
+    container_name: traefik-fa
+    volumes:
+      - ./config/traefik/forward.ini:/forward.ini
+    environment:
+      - CONFIG=/forward.ini
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.backend=traefik-fa
+      - traefik.http.services.traefik-fa.loadBalancer.server.port=4181
+      # SSL configuration
+      - traefik.http.routers.traefik-fa-ssl.entryPoints=https
+      - traefik.http.routers.traefik-fa-ssl.rule=host(`auth.${TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.traefik-fa-ssl.middlewares=sso@file
+      - traefik.http.routers.traefik-fa-ssl.tls=true
+      - traefik.http.routers.traefik-fa-ssl.tls.certResolver=le
+  whoami:
+    image: emilevauge/whoami
+    container_name: whoami
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.backend=whoami
+      - traefik.docker.network=traefik2_template_traefik
+      # SSL configuration
+      - traefik.http.routers.whoami.entryPoints=https
+      - traefik.http.routers.whoami.rule=host(`whoami.${TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.whoami.middlewares=sso@file
+      - traefik.http.routers.whoami.tls=true
+      - traefik.http.routers.whoami.tls.certResolver=le
+
+networks:
+  traefik:
+    driver: bridge
+  traefik_external:
+    driver: bridge

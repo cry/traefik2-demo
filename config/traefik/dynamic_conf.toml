@@ -1,0 +1,18 @@
+[http.routers]
+  [http.routers.https-only]
+    entryPoints = ["http"]
+    middlewares = ["httpsredirect"]
+    rule = "HostRegexp(`{host:.+}`)"
+    service = "noop"
+
+[http.services]
+  [http.services.noop.loadBalancer]
+    [[http.services.noop.loadBalancer.servers]]
+      url = "http://192.168.0.1"
+
+[http.middlewares]
+  [http.middlewares.sso.forwardAuth]
+    address = "http://traefik-fa:4181"
+    authResponseHeaders = ["X-Forwarded-User"]
+  [http.middlewares.httpsredirect.redirectScheme]
+    scheme = "https"

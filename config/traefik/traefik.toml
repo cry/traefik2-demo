@@ -1,0 +1,27 @@
+[log]
+  level = "INFO"
+
+[entryPoints]
+  [entryPoints.http]
+    address = ":80"
+  [entryPoints.https]
+    address = ":443"
+
+[api]
+  dashboard = true
+  insecure = true
+
+[providers]
+  [providers.file]
+    filename = "/etc/traefik/dynamic_conf.toml"
+  [providers.docker]
+    endpoint = "unix:///var/run/docker.sock"
+    watch = true
+    exposedbydefault = false
+    defaultrule = "Host(`{{ .Name }}.demo.carey.li`)"
+
+[certificatesResolvers.le.acme]
+  email = "hello@carey.li"
+  storage = "/etc/traefik/acme.json"
+  [certificatesResolvers.le.acme.dnsChallenge]
+    provider = "digitalocean"
